@@ -7,9 +7,9 @@ struct SortElement {
     pixel_info: Vec<u8>,
 }
 
-fn print_type_of<T>(_: &T) {
+/*fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
-}
+}*/
 
 fn convert_image_to_vector(dir: &str) -> Vec<SortElement> {
     //println!("{:?}", img.dimensions());
@@ -86,8 +86,8 @@ fn save_image(dimensions: (u32, u32), image_vector: Vec<SortElement>) {
 fn sort_image_by_luminosity(image_vector: Vec<SortElement>) -> Vec<SortElement> {
     let mut vector_to_sort: Vec<SortElement> = image_vector.to_vec();
     let mut start: usize = 0 as usize;
-    let mut second_iterator: usize = 0;
-    let mut minimal_lumi: f32 = vector_to_sort[0].luminance;
+    let mut second_iterator: usize;
+    let mut minimal_lumi: f32;
     let mut swap_cache: SortElement;
 
     let mut lumi_sum: f32 = 0.0;
@@ -103,7 +103,7 @@ fn sort_image_by_luminosity(image_vector: Vec<SortElement>) -> Vec<SortElement> 
     }*/
     
     while start < vector_to_sort.len() { 
-        if(vector_to_sort[start].luminance > (lumi_sum/vector_to_sort.len() as f32) as f32) {
+        if vector_to_sort[start].luminance > (lumi_sum/vector_to_sort.len() as f32) as f32 {
         minimal_lumi = vector_to_sort[start].luminance;
         second_iterator = start;
         while second_iterator < vector_to_sort.len() {
