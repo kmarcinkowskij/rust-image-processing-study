@@ -1,5 +1,5 @@
 use image::{GenericImageView, ImageBuffer, RgbaImage, Rgba};
-use std::time::Instant;
+use std::{time::Instant};
 
 #[derive(Debug, Clone)]
 struct SortElement {
@@ -51,7 +51,7 @@ fn get_image_dimensions(dir: &str) -> (u32, u32) {
     return img.dimensions();
 }
 
-fn save_image(dimensions: (u32, u32), image_vector: Vec<SortElement>) {
+fn save_image(dimensions: (u32, u32), image_vector: Vec<SortElement>, _name: String) {
     let image_width: u32 = dimensions.0;
     let image_height: u32 = dimensions.1;
     let mut current_index: u32 = 0;
@@ -73,18 +73,21 @@ fn save_image(dimensions: (u32, u32), image_vector: Vec<SortElement>) {
         //b = (image_vector[currentIndex as usize].pixel_info[2] as f32 - ((image_vector[currentIndex as usize].pixel_info[2]) as f32)) as u8;
 
         *pixel = Rgba([r,g,b,a]);
+        // println!("{:?}", pixel);
         current_index += 1;
     }
 
-    match buffer.save("image.png") {
+    let filename = _name + ".png";
+    match buffer.save(filename) {
         Err(e) => println!("Error writing file: {}", e),
         Ok(()) => println!("done!"),
     }
 }
 
 
-fn sort_image_by_luminosity(image_vector: Vec<SortElement>) -> Vec<SortElement> {
+fn sort_image_by_luminosity(image_vector: Vec<SortElement>, _mask_vector: Vec<SortElement>) -> Vec<SortElement> {
     let mut vector_to_sort: Vec<SortElement> = image_vector.to_vec();
+    let mut vector_mask: Vec<SortElement> = _mask_vector.to_vec();
     let mut start: usize = 0 as usize;
     let mut second_iterator: usize;
     let mut minimal_lumi: f32;
@@ -96,18 +99,18 @@ fn sort_image_by_luminosity(image_vector: Vec<SortElement>) -> Vec<SortElement> 
         lumi_sum += pixel.luminance as f32;
     }
 
-    println!("{}", lumi_sum/vector_to_sort.len() as f32);
+    // println!("{}", lumi_sum/vector_to_sort.len() as f32);
     //FIXME: replace the insertion sort algorithm with something quicker (eg. quicksort, merge sort);
     
     /*for pixel in image_vector {
     }*/
     
     while start < vector_to_sort.len() { 
-        if vector_to_sort[start].luminance > (lumi_sum/vector_to_sort.len() as f32) as f32 {
+        // if vector_to_sort[start].luminance > (lumi_sum/vector_to_sort.len() as f32) as f32 {
         minimal_lumi = vector_to_sort[start].luminance;
         second_iterator = start;
         while second_iterator < vector_to_sort.len() {
-            if vector_to_sort[second_iterator].luminance > minimal_lumi {
+            if vector_to_sort[second_iterator].luminance > minimal_lumi && vector_mask[second_iterator].pixel_info == vec![255,255,255,255]  {
                 minimal_lumi = vector_to_sort[start].luminance;
                 swap_cache = vector_to_sort[start].clone();
                 vector_to_sort[start] = vector_to_sort[second_iterator].clone();
@@ -115,7 +118,7 @@ fn sort_image_by_luminosity(image_vector: Vec<SortElement>) -> Vec<SortElement> 
             }
             second_iterator += 1;
             }
-        }
+        // }
         start += 1;
     }
 
@@ -123,14 +126,35 @@ fn sort_image_by_luminosity(image_vector: Vec<SortElement>) -> Vec<SortElement> 
 
 }
 
+fn create_contrast_mask(_image_vector: &Vec<SortElement>, _low: f32, _high: f32, _dimensions: &(u32, u32)) -> Vec<SortElement> {
+    let mut mask_vector: Vec<SortElement> = _image_vector.to_vec();
+    let mut masked: Vec<SortElement> = vec![];
+    for mut pixel in &mask_vector[..] {
+        // println!("{:?}", pixel);
+        if pixel.luminance > _high || pixel.luminance < _low {
+            masked.push(SortElement{luminance: pixel.luminance, pixel_info: vec![0,0,0,255]});
+            // pixel.pixel_info = vec![0,0,0,1].to_vec();
+            continue;
+        }
+
+        masked.push(SortElement{luminance: pixel.luminance, pixel_info: vec![255,255,255,255]});
+    }
+
+    save_image(*_dimensions, masked.clone(), "contrast-mask".to_string());
+    return masked;
+}
+
 
 fn main() {
-    let image_path: &str = "kitten.jpg";
+    let image_path: &str = "image-2.png";
     let before = Instant::now();
     let mut image_vector: Vec<SortElement> = convert_image_to_vector(&image_path);
-    image_vector = sort_image_by_luminosity(image_vector.clone());
-    save_image(get_image_dimensions(image_path), image_vector);
+    let mask_vector: Vec<SortElement> = create_contrast_mask(&image_vector,80.0, 150.0, &get_image_dimensions(image_path));
+    image_vector = sort_image_by_luminosity(image_vector.clone(), mask_vector);
+    save_image(get_image_dimensions(image_path), image_vector, "image".to_string());
+    
     println!("Elapsed time: {:.2?}", before.elapsed());
 }
 
 
+//TODO: use the contrast mask to only sort specific pixels!
